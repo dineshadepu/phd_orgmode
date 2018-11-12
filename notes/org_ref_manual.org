@@ -15,25 +15,24 @@
 ** Citations
    label:sec:citations
    To cite a paper, place the following two lines at the bottom of the file
-   #+BEGIN_EXAMPLE
-   bibliography:./mylit.bib
-   bibliographystyle:unsrt
-   #+END_EXAMPLE
 
    Cite the paper by following syntax
 
+   cite:kiara-2013-sph-incom-part-II
+
+   Or one can specify other types of citing style by.
+
+   Make sure that the style we are using is available in the current
+   directory. Like in here I am using phd class, so it requires iitbauthyr
+   citation style. So we need to have that file in the same level, then use it
+   as requisite bib style.
+
    #+BEGIN_EXAMPLE
-   cite:rich-mart92
+   bibliographystyle:iitbauthyr
+   bibliography:~/Dropbox/Research/references.bib
    #+END_EXAMPLE
 
-   cite:rich-mart92
-
-   Or one can specify other types of citing style by
-
-   #+BEGIN_EXAMPLE
-   bibliography:./mylit.bib
-   bibliographystyle:../document/iitbauthyr
-   #+END_EXAMPLE
+   Make sure $iitbauthyr.bst$ is in the current directory.
 
 ** Figures
    label:sec:figures
@@ -94,5 +93,6 @@
    \end{equation}
    #+END_src
 
-bibliography:./mylit.bib
-bibliographystyle:unsrt
+
+bibliographystyle:iitbauthyr
+bibliography:~/Dropbox/Research/references.bib
