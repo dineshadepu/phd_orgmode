@@ -1,0 +1,98 @@
+#+LaTeX_CLASS: phd
+#+OPTIONS: author:nil date:nil title:nil toc:nil
+
+
+* Introduction
+  In this file we learn how to use org mode to write a paper or thesis and use
+  the power to cite refer label and et cetera.
+
+  This chapter has three section.
+
+  - First section deals about citations ref:sec:citations.
+  - Second section deals all about figures ref:sec:figures.
+  - Final section deals with equations ref:sec:equations.
+
+** Citations
+   label:sec:citations
+   To cite a paper, place the following two lines at the bottom of the file
+   #+BEGIN_EXAMPLE
+   bibliography:./mylit.bib
+   bibliographystyle:unsrt
+   #+END_EXAMPLE
+
+   Cite the paper by following syntax
+
+   #+BEGIN_EXAMPLE
+   cite:rich-mart92
+   #+END_EXAMPLE
+
+   cite:rich-mart92
+
+   Or one can specify other types of citing style by
+
+   #+BEGIN_EXAMPLE
+   bibliography:./mylit.bib
+   bibliographystyle:../document/iitbauthyr
+   #+END_EXAMPLE
+
+** Figures
+   label:sec:figures
+   Create a figure using org mode syntax
+
+   #+BEGIN_EXAMPLE
+   #+name: figure_org_style
+   #+attr_latex: :placement [H]
+   #+caption: Figure using org mode style
+   [[file:img/figure_1.png]]
+   #+END_EXAMPLE
+
+
+   #+name: figure_org_style
+   #+attr_latex: :placement [H]
+   #+caption: Figure using org mode style
+   [[file:img/figure_1.png]]
+
+   Check if the latex attribute worked properly. Refer the figure
+   ref:figure_org_style.
+
+
+   #+BEGIN_EXAMPLE
+   \begin{figure}[H]
+     \centering
+     \includegraphics[scale=0.2]{img/figure_1.png}
+     \caption{\label{fig:latex_style_figure} }
+   \end{figure}
+   #+END_EXAMPLE
+
+   #+BEGIN_EXPORT latex
+   \begin{figure}[H]
+     \centering
+     \includegraphics[scale=0.2]{img/figure_1.png}
+     \caption{\label{fig:latex_style_figure} }
+   \end{figure}
+   #+END_EXPORT
+
+   Check the figure placement. Refer the figure
+   ref:fig:latex_style_figure.
+
+
+** Equations
+   label:sec:equations
+   Equations can be written using latex environment as
+
+   #+BEGIN_EXAMPLE
+   \begin{equation}
+     \label{eq:einstien}
+     E = mc^2
+   \end{equation}
+   #+END_EXAMPLE
+
+   #+BEGIN_src latex
+   \begin{equation}
+     \label{eq:einstien}
+     E = mc^2
+   \end{equation}
+   #+END_src
+
+bibliography:./mylit.bib
+bibliographystyle:unsrt
