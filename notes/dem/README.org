@@ -1,0 +1,7 @@
+* Introduction
+  Implementation details and phyics of Discrete element method is discussed.
+
+* Structure
+  Discrete element method is implemented in =code/dem.py= file. Several
+  examples are given in the same folder. Tests to check the implementation
+  are in =code/test_dem.py=.

@@ -1,0 +1,112 @@
+#+LaTeX_CLASS: article
+#+OPTIONS: author:nil date:nil title:nil toc:nil
+
+* TODO Tests [1/3]
+** DONE Case 1: No particles are overlapping
+   In this test case no particles are in contact. After executing the requisite
+   equations check for the contact indices of each particle. It has to be zero or
+   empty as expected.
+*** Create particles
+    #+BEGIN_SRC sage :file test_figures/test_case_1.png :cache yes
+# You can change the size of the image by providing the figsize argument.
+import numpy as np
+x = np.asarray([0., 0.21, -0.2, 0.2, 0.])
+y = np.asarray([0., 0.21, 0.1, -0.1, 0.21])
+R = np.ones_like(x) * 0.1
+
+g = Graphics()
+for i in range(len(x)):
+    g += plot(circle((x[i], y[i]), R[i]))
+    g += text(str(i), (x[i] + 0.01, y[i] + 0.01))
+    g.show()
+    #+END_SRC
+
+    #+RESULTS[7a589e88490845f54c9974583da23cc33e631faf]:
+    [[file:test_figures/test_case_1.png]]
+
+*** Execute equations
+    Now execute the linear force equation on the required particles.
+    #+NAME: name
+    #+BEGIN_SRC python
+# ------------------------------
+# execute the interparticle force equation
+# ------------------------------
+
+from pysph.tools.sph_evaluator import SPHEvaluator
+if self._sph_eval is None:
+    equations = [
+	LinearSpringForceParticleParticle(dest='sand',
+					    sources=['sand'])
+    ]
+
+    self._sph_eval = SPHEvaluator(arrays=[self.pa],
+				    equations=equations, dim=2,
+				    kernel=CubicSpline(dim=2))
+
+self._sph_eval.evaluate()
+    #+END_SRC
+    This equation has to add new contacts to the list and will =not= delete any
+    contacts if a particle is not overlapping. But if a particle is there in the
+    list but it is not overlapping then its tangential acceleration will be
+    zero.
+
+*** Check for contacts
+    Since in our case no particle is in contact with any other particle. After
+    executing the force equation the contact indices, contact displacements must
+    be as it is.
+
+    #+BEGIN_SRC python
+# check the tangential contacts indices and displacements
+# number of contacts of each individual particles
+for i in range(len(self.pa.x)):
+    self.pa.total_tng_contacts[i] = 0.
+
+for i in range(self.pa.total_dem_entities[0]):
+    self.pa.tng_idx[i] = -1
+    self.pa.tng_x[i] = 0.
+    self.pa.tng_y[i] = 0.
+    self.pa.tng_z[i] = 0.
+    #+END_SRC
+
+
+
+** TODO Case 2: Add contacts
+   Create particles such that few of them are in contact. After executing the
+   equations the contacts will be updated. This will test the
+   =LinearSpringForce= equation. Now check the contact indices of each
+   particle. For an example say particle 1 is in overlap with 2, 5, 9. Then both
+   the particles tracking indices has to have their corresponding contacts in
+   the tracking history.
+
+
+*** Create particles
+    In this case make some particles to be in contact.
+    #+BEGIN_SRC sage :file test_figures/test_case_2.png :cache yes
+# You can change the size of the image by providing the figsize argument.
+import numpy as np
+x = np.asarray([0., 0.18, -0.18, 0.21, 0.])
+y = np.asarray([0., 0.21, 0.05, 0.03, 0.19])
+R = np.ones_like(x) * 0.1
+
+g = Graphics()
+for i in range(len(x)):
+    g += plot(circle((x[i], y[i]), R[i]))
+    g += text(str(i), (x[i] + 0.01, y[i] + 0.01))
+    g.show()
+    #+END_SRC
+
+    #+RESULTS[74685f6f0e05a22f52097b5ac7f0561a7684daf8]:
+    [[file:test_figures/test_case_2.png]]
+
+*** Execute equations
+
+*** Check for contacts
+
+** TODO Case 3: Remove contacts
+   Create particles such that only few are in contact. But the tracking indices
+   has to be more than the particles in contact. After executing the equations,
+   it has to remove the useless contact indices.
+
+*** Create particles
+*** Execute equations
+*** Check for contacts

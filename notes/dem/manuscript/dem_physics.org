@@ -1,0 +1,360 @@
+#+LaTeX_CLASS: article
+#+OPTIONS: author:nil date:nil title:nil toc:nil
+#+OPTIONS: ^:nil
+# -*- org-export-babel-evaluate: nil -*-
+
+# % ----------------- Code blocks ----------------
+
+# % change style of section headings
+#+LaTeX_HEADER: \usepackage{sectsty}
+#+LaTeX_HEADER: \allsectionsfont{\sffamily}
+
+# % only required for orgmode ticked TODO items, can remove
+#+LaTeX_HEADER: \usepackage{amssymb}
+
+# % only required for underlining text
+#+LaTeX_HEADER: \usepackage[normalem]{ulem}
+
+# % often use this in differential operators:
+#+LaTeX_HEADER: \renewcommand{\d}{\ensuremath{\mathrm{d}}}
+
+# % allow more reasonable text width for most documents than LaTeX default
+#+LaTeX_HEADER: \setlength{\textheight}{21cm}
+#+LaTeX_HEADER: \setlength{\textwidth}{16cm}
+
+# % reduce left and right margins accordingly
+#+LaTeX_HEADER: \setlength{\evensidemargin}{-0cm}
+#+LaTeX_HEADER: \setlength{\oddsidemargin}{-0cm}
+
+# % reduce top margin
+#+LaTeX_HEADER: \setlength{\topmargin}{0cm}
+
+# % Increase default line spacing a little if desired
+#+LaTeX_HEADER: \renewcommand{\baselinestretch}{1.2}
+
+# % tailored float handling
+#+LaTeX_HEADER: %\renewcommand{\topfraction}{0.8}
+#+LaTeX_HEADER: %\renewcommand{\bottomfraction}{0.6}
+#+LaTeX_HEADER: %\renewcommand{\textfraction}{0.2}
+
+#+BEGIN_EXPORT latex
+\title{\sffamily \textbf{DEM Physics and its implementation}}
+
+\author{Dinesh A, IIT Bombay}
+
+\maketitle
+
+
+\begin{abstract}
+  Discrete element method explanation and implementation. This report mainly
+  deals with RK2 implementation of DEM step.
+\end{abstract}
+#+END_EXPORT
+
+* Post step equation description
+  Let us say that we have five particles in our world which are contained in a
+  particle array named /soil/. Say at time $t=t0$ the particles are in a configuration of
+  figure \ref{fig:pars_t0}
+
+  \begin{figure}[H]
+  \centering
+  \includegraphics[scale=0.15]{dem_physics_figures/pars_t0.eps}
+  \caption{Particles at t0\label{fig:pars_t0}}
+  \end{figure}
+
+  The contact at time $t0$ of particle 1 are
+
+  #+BEGIN_SRC python
+       trk_idxs = [2, 3, 5, -1, -1, -1]
+  #+END_SRC
+
+  After moving to the next time step by using our favorite integrator, the particles
+  at time $t0+dt$ look like in figure \ref{fig:pars_t0_dt}
+
+  \begin{figure}[H]
+  \centering
+  \includegraphics[scale=0.25]{dem_physics_figures/pars_t0_dt.eps}
+  \caption{Particles at time t0+dt\label{fig:pars_t0_dt}}
+  \end{figure}
+
+  Now before we move on to start the computation at $t0+dt$, we will update the
+  contact information of all the particles in our /soil/ by running an equation
+  in poststep.
+
+  After post step the *trk_idxs*  are
+
+  #+BEGIN_SRC python
+       trk_idxs = [2, 3, -1, -1, -1, -1]
+  #+END_SRC
+
+  Well, *but* the actual contacts of particle 1 are 2, 3, 4. A point to be
+  noted, after the time step, we will only update the existing contact
+  information, we will not add any new contacts but will remove if any particle
+  left the contact. By moving from time $t0$ to $t0+dt$, particle 1
+  lost contact with particle 5, so we just updated that information.
+
+  *Note* that new contacts to a particle are added at the beginning of the time
+  step.  This update simplifies RK2 implementation. Let us see how.
+
+
+* RK2 implementation in PySPH
+  Let us start our system from the previous section. We are interested in the
+  dynamcis of the particle 1 which is in contact with
+  particles 2, 3, 4 at $t0$. Since particle 4 came in to contact at time $t0$, we don't
+  have it in out tracking list. Let's see how the tracking indices of particle 1
+  look, before we start the force and other computations.As expected particle 4
+  is not there in the list.
+
+  #+BEGIN_SRC python
+       trk_idxs = [2, 3, -1, -1, -1, -1]
+  #+END_SRC
+
+  RK2 integration scheme is implemented by /EPECIntegrator/ in PySPH which can
+  be found [[https://github.com/pypr/pysph/blob/master/pysph/sph/integrator.py#L249][here]].
+
+  #+BEGIN_SRC python
+	def one_timestep(self, t, dt):
+	    self.initialize()
+
+	    self.compute_accelerations()
+
+	    # Predict
+	    self.stage1()
+
+	    # Call any post-stage functions.
+	    self.do_post_stage(0.5*dt, 1)
+
+	    self.compute_accelerations()
+
+	    # Correct
+	    self.stage2()
+
+	    # Call any post-stage functions.
+	    self.do_post_stage(dt, 2)
+  #+END_SRC
+
+
+  In RK2, first we save the properties at time $t0$ which can be used to move to
+  $t0+dt$ by accelerations at time $t0+dt/2$. Here we only focus on tangential
+  contact implementation. So at the beginning of the time step, the contact
+  information of particle 1 is,
+
+  #+BEGIN_SRC python
+       trk_idxs = [2, 3, -1, -1, -1, -1]
+  #+END_SRC
+
+  \noindent remember that the actual number of contacts particle 1 is actually
+  2, 3, 4. But from the previous time step we are only given 2, 3 as
+  contacts. The new particle 4 will be added while computing the forces (How?
+  This will elaborated).
+
+  In PySPH we save the particle properties in /initialize/ method. Let's save the
+  tangential overlap /tng_x/ which is at time $t0$ to /tng_x0/
+
+  #+BEGIN_SRC python
+	def initialize(self, ...):
+	    d_tng_x0[d_idx] = d_tng_x[d_idx]
+  #+END_SRC
+
+  We will not save the tracking indices at time $t0$.
+
+  After running /initialize/ the tangential overlap array looks like
+
+  #+BEGIN_SRC python
+	def initialize(self, ...):
+	    d_tng_x0[d_idx] = d_tng_x[d_idx]
+	tng_x = [1.2, 2.1, 0., 0., 0.]
+	tng_x0 = [1.2, 2.1, 0., 0., 0.]
+	atang_x = [0.3, 0.2, 0., 0., 0.]
+  #+END_SRC
+
+
+  Rest of the methods in integrator will be discussed using three use cases.
+
+  1) How would we deal with new contacts at time $t0$? Particle 4 comes under that case.
+  2) How would we deal with Particles leaving at half a time step? An example
+     will be given in its section.
+  3) What if a particle comes into contact at half time step? An example will be
+     given in its section.
+
+  Before we begin let me remind you once again that /tng_x/ and /tng_x0/ are at time $t0$.
+
+
+
+** Case 1
+   \begin{figure}[H]
+   \centering
+   \includegraphics[scale=0.30]{dem_physics_figures/case1_t0.png}
+   \caption{Particles at time t0\label{fig:case1_t0}}
+   \end{figure}
+
+   This the present case. While computing the force, we will add the particle index
+   and tangential acceleration to /atng_x/ and we won't touch /tng_x0/. And also increment
+   the count of total number of contacts.
+
+   #+BEGIN_SRC python
+	 if found == 0:
+	     found_at = q
+	     d_tang_idx[found_at] = s_idx
+	     d_total_tang_contacts[d_idx * d_total_dem_entities[0] +
+				     s_dem_id[0]] += 1
+
+	     # set the acceleration for the current time step
+	     d_atang_x[found_at] = vt_x
+    #+END_SRC
+
+
+   Here we should add particle 4 and also set its acceleration. After /compute_forces/,
+   the tangential variables of particle 1 look like
+
+   #+BEGIN_SRC python
+	tng_x0 = [1.2, 2.1, 0., 0., 0.]
+	tng_x = [1.2, 2.1, 0., 0., 0.]
+	trk_idxs = [2, 3, 4, -1, -1]
+	atng_x = [1.2, 2.1, 1.4., 0.]
+   #+end_src
+
+   In /stage_1/ particles will move to half a time step, tangential overlap will
+   also be at $t0+dt/2.$.
+
+
+   #+BEGIN_SRC python
+	def stage1(self, ...):
+	    # Code elided. Only tangential update is given
+	    for i in range(0, num_ctcs):
+		d_tng_x[i] = d_tng_x0[i] + dtb2 * d_vt[i]
+   #+end_src
+
+   Particle 1 tangential variables after stage 1 will look like,
+
+   #+BEGIN_SRC python
+	tng_x0 = [1.2, 2.1, 0., 0., 0.]
+	tng_x = [1.5, 3.1, 1.9, 0., 0.]
+	trk_idxs = [2, 3, 4, -1, -1]
+	atng_x = [1.2, 2.1, 1.4., 0.]
+   #+end_src
+
+   Please note that the tangential displacement of particle 4 has some
+   value. Let us have a keen look at contact between 1 and 4. At the beginning
+   of the time step, we don't have the information of particle 4 to be in
+   contact with 1. While computing forces we added that to end of the tracking
+   indices. One assumption we made here is when the particle comes into contact
+   for a first time its tangential overlap will be zero. In our example particle
+   4 was newly added at time $t0$. Which implies that its tangential
+   displacement at time $t0$ is zero. Fortunately that is what /tang_x0/ is
+   representing.
+
+   Now we /compute_accelerations/ using the positions of particles at time
+   $t0+dt/2$ and corresponding tangential displacements which are also
+   at time $t0+dt/2$.
+
+   Finally in stage 2, using the accelerations at time $t0+dt/2$ and positions
+   at time $t0$ we progress the system to time $t0+dt$. That would be
+
+   #+BEGIN_SRC python
+	def stage2(self, ...):
+	    # Code elided. Only tangential update is given
+	    for i in range(0, num_ctcs):
+		d_tng_x[i] = d_tng_x0[i] + dt * d_vt[i]
+   #+end_src
+
+   This is will not create any problem with particle 4. Since we have
+
+   #+BEGIN_SRC python
+	# Since particle 4 is at position 2
+	d_tng_x[2] = d_tng_x0[2] + dt * d_vt[2]
+   #+end_src
+
+   We are incrementing the tangential overlap of particle 4 which has zero
+   tangential overlap at time $t0$ by using the acceleration at time $t0+dt/2$,
+   which also satisfies the integration property.
+
+   Then final configuration of the particles may look like figure \ref{fig:case1_t0_dt}
+
+   \begin{figure}[H]
+   \centering
+   \includegraphics[scale=0.30]{dem_physics_figures/case1_t0_dt.png}
+   \caption{Particles at time t0 + dt\label{fig:case1_t0_dt}}
+   \end{figure}
+
+   Note: Updating the contact information after the time step is helpful here.
+
+** Case 2
+   In case 2 we deal with particle loosing contact at time $t0 + dt/2$. For an
+   example take three particles 1, 2, 3. Say at time $t0$ particle 2 and 3 are
+   in contact with particle 1. At time $t0+dt/2$ particle 3 leaves contact with particle 1.
+   This is depicted in figure \ref{fig:case2}
+
+   \begin{figure}[H]
+   \centering
+   \includegraphics[scale=0.25]{dem_physics_figures/case2.png}
+   \caption{Particles at time t0, t0 + dt/2\label{fig:case2}}
+   \end{figure}
+
+   After /stage1/ particle 1 properties are
+
+   #+BEGIN_SRC python
+        tng_x0 = [1.2, 2.1, 0., 0., 0.]
+        tng_x = [1.5, 3.1, 0., 0., 0.]
+	trk_idxs = [2, 3, -1, -1, -1]
+	atng_x = [1.2, 2.1, 0., 0.]
+   #+end_src
+
+   in /compute_accelerations/ we see that particle 3 has left
+   the contact. In /compute_accelerations/, as particle 3 is checked for force
+   we get that it is not in contact. So we will not compute any force from
+   particle 3. Since we ignore particle 3 for force computation, the accelerations
+   of it are unchanged from time $t0$. The properties of particle 1 after /compute_accelerations_2/
+   would be
+
+   #+BEGIN_SRC python
+	tng_x0 = [1.2, 2.1, 0., 0., 0.]
+	tng_x = [1.5, 3.1, 0., 0., 0.]
+	trk_idxs = [2, 3, -1, -1, -1]
+	atng_x = [5.6, 2.1, 0., 0.]
+   #+end_src
+
+   Please note that the /atng_x/ of contact with particle 3 is not changed after
+   compute accelerations, this is due to particle 3 is no more in contact. But
+   rest of the contact accelerations are changed. In order to implement RK2
+   smoothly we will not remove the particle 3 at $t0+dt/2$.
+
+   In stage 2
+
+   #+BEGIN_SRC python
+	def stage2(self, ...):
+	    # Code elided. Only tangential update is given
+	    for i in range(0, num_ctcs):
+		d_tng_x[i] = d_tng_x0[i] + dt * d_vt[i]
+   #+end_src
+
+   Particle 3 tangential displacement will be incremented to time $t0+dt$ by
+   using the velocity at time $t0$ (since we didn't updated it at time
+   $t0+dt/2$).
+
+   After the time step we will check if particle 3 is still in overlap, if so
+   retain it else remove it.
+
+
+** Case 3
+   What if a particle comes into contact at a half time step? Here we simply add to
+   the tracking list and compute its acceleration at tme $t0+dt/2$. In stage 2 using
+   the tangential acceleration at half time step, we will increment it to next time step.
+   This is done by
+
+   #+BEGIN_SRC python
+	def stage2(self, ...):
+	    # Code elided. Only tangential update is given
+	    for i in range(0, num_ctcs):
+		d_tng_x[i] = d_tng_x0[i] + dt * d_vt[i]
+   #+end_src
+
+   Here the advantage is the tangential displacement at time $t0$ is zero which
+   is taken care by /tng_x0/. By adding particle to the end automatically we are
+   assigning it a zero tangential displacement by default.
+
+
+bibliographystyle:unsrt
+#+BEGIN_EXPORT latex
+\end{document}
+#+END_EXPORT

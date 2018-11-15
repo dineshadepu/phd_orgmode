@@ -1,0 +1,323 @@
+#+LaTeX_CLASS: article
+#+OPTIONS: author:nil date:nil title:nil toc:nil
+#+OPTIONS: ^:nil
+# -*- org-export-babel-evaluate: nil -*-
+
+# % ----------------- Code blocks ----------------
+
+# % change style of section headings
+#+LaTeX_HEADER: \usepackage{sectsty}
+#+LaTeX_HEADER: \allsectionsfont{\sffamily}
+
+# % only required for orgmode ticked TODO items, can remove
+#+LaTeX_HEADER: \usepackage{amssymb}
+
+# % only required for underlining text
+#+LaTeX_HEADER: \usepackage[normalem]{ulem}
+
+# % often use this in differential operators:
+#+LaTeX_HEADER: \renewcommand{\d}{\ensuremath{\mathrm{d}}}
+
+# % allow more reasonable text width for most documents than LaTeX default
+#+LaTeX_HEADER: \setlength{\textheight}{21cm}
+#+LaTeX_HEADER: \setlength{\textwidth}{16cm}
+
+# % reduce left and right margins accordingly
+#+LaTeX_HEADER: \setlength{\evensidemargin}{-0cm}
+#+LaTeX_HEADER: \setlength{\oddsidemargin}{-0cm}
+
+# % reduce top margin
+#+LaTeX_HEADER: \setlength{\topmargin}{0cm}
+
+# % Increase default line spacing a little if desired
+#+LaTeX_HEADER: \renewcommand{\baselinestretch}{1.2}
+
+# % tailored float handling
+#+LaTeX_HEADER: %\renewcommand{\topfraction}{0.8}
+#+LaTeX_HEADER: %\renewcommand{\bottomfraction}{0.6}
+#+LaTeX_HEADER: %\renewcommand{\textfraction}{0.2}
+
+#+BEGIN_EXPORT latex
+\title{\sffamily \textbf{Tracking feature in PySPH}}
+
+\author{Dinesh A, IIT Bombay}
+
+\maketitle
+
+
+\begin{abstract}
+  This a report on the implementation of discrete element method in PySPH and
+  request for a feature to execute an equation after the completion of the time
+  step to update the contact information.
+\end{abstract}
+#+END_EXPORT
+
+* Why
+  In a usual SPH simulation we never track the particles which are in contact
+  with it.  But suppose say there is a case where we want to have a list of
+  neighbours which are actually in contact, such as partcicles in its smoothing
+  length regime.
+
+
+* SPH Example
+  I want to discuss two examples to explain the problem here. One is the
+  simulation of elliptical drop evolution and dam break. These
+  examples are explainted in terms of pysph implementation.
+
+
+** Elliptical drop
+   To simulate an elliptical drop in PySPH we create an entity with particles
+   intially at some state. As time evolves they form an elliptical drop.
+
+   The code for elliptical drop simulation can be found [[https://github.com/pypr/pysph/blob/master/pysph/examples/elliptical_drop_no_scheme.py][here]].
+
+   #+BEGIN_SRC python
+    class EllipticalDrop(EDScheme):
+	def create_particles(self):
+	    # code elided
+	    pa = get_particle_array_wcsph(x=x, y=y, m=m, rho=rho, h=h,
+					u=u, v=v, name="fluid")
+
+	    return [pa]
+	# code elided
+   #+end_src
+
+   So in this simulation we have got one entity with name as /fluid/. So each particle
+   in this entity can interact any other particle of its own entity.
+
+** Dam break
+   Similarly dam break has two entities. Such as "fluid" and "boundary". The
+   code for simulation can be found [[https://github.com/pypr/pysph/blob/master/pysph/examples/dam_break_2d.py][here]]. It's a little complicated for our
+   example.
+
+
+   #+BEGIN_SRC python
+    class DamBreak2D(Application):
+	def create_particles(self):
+	    # Code elided
+	    fluid, boundary = geom.create_particles(
+		nboundary_layers=nboundary_layers, hdx=self.hdx,
+		nfluid_offset=nfluid_offset,
+	    )
+	    return [fluid, boundary]
+	# code elided
+   #+end_src
+
+   So in this simulation we have got two entity with names as /fluid/ and
+   /boundary/. In this case each particle in fluid can interact with every other
+   particle in both the entities.
+
+
+* How the data structure looks
+  We create a constant for the particle array to save the indices which are in
+  contact. Let's take a look at the examples to see how this constant can be
+  formulated.
+
+** Tracking array in Elliptical drop
+   Evolution of an elliptical drop can be seen in figure \ref{fig:el_d}.
+   \begin{figure}[H]
+   \centering
+   \includegraphics[scale=0.35]{dem_pysph_implementation_figures/elliptical_drop.png}
+   \caption{elliptical drop evolution\label{fig:el_d}}
+   \end{figure}
+
+   The particles which are in the influence region of a particle with index
+   (say 4) can be seen in figure \ref{fig:par_trk_idxs}.
+
+   \begin{figure}[H]
+   \centering
+   \includegraphics[scale=1]{dem_pysph_implementation_figures/ed_zoom.png}
+   \caption{A particle influenced by other particles\label{fig:par_trk_idxs}}
+   \end{figure}
+
+   To keep track of the indices which are in contact, first we assume a maximum
+   number particles a particle can possible be in a contact with. Let's say 6.
+
+   #+BEGIN_SRC python
+    	pa.add_constant('limit', 6)
+   #+end_src
+
+   Now since each particle has a 6 number of neighbours, the constant of trackng
+   indices would be of a length of total number of particles multiplied by 6 (or
+   limit).
+
+   #+BEGIN_SRC python
+    	pa.add_constant('trk_idx', len(pa.x) * limit))
+   #+end_src
+
+   We can also keep track of number of active contacts which is advantageous
+   while computing some quantity. This has a length of number of particles.
+
+   #+BEGIN_SRC python
+    	pa.add_constant('tot_ctcs', len(pa.x))
+   #+end_src
+
+   *Note*: Till now we don't have any issues with our 'trk_idx' array.
+
+   Having said that lets move to dam break.
+
+** Tracking array in Dam break
+   A typical dam break simulation will look like figure \ref{fig:db}.
+
+   \begin{figure}[H]
+   \centering
+   \includegraphics{dem_pysph_implementation_figures/db.eps}
+   \caption{Dam break\label{fig:db}}
+   \end{figure}
+
+   When we zoom onto a single fluid particle we can see the particles it is in
+   contact at that time step, which can be seen in figure
+   \ref{fig:par_cntct_fluid_boundary}. Now lets see how our 'trk_idx' looks with
+   both fluid and solid indices.
+
+   \begin{figure}[H]
+   \centering
+   \includegraphics[scale=0.5]{dem_pysph_implementation_figures/particle_influenced.eps}
+   \caption{Fluid particle in contact with fluid and boundary\label{fig:par_cntct_fluid_boundary}}
+   \end{figure}
+
+   Since the maximum number of particles a particle can be in contact is defined by /limit/. For a
+   particle with index /6/ the array indices available are
+
+   #+BEGIN_SRC python
+    	rng_idxs_start = 6 * limit
+    	rng_idxs_stop = rng_idxs_start + limit
+   #+end_src
+
+   So every particle will get an array size of /limit/. For a particle with an
+   index of 6, the array starts at 36 and will end at 41. We are looking at the
+   indices tracked by the particle in red. The indices could be
+
+   #+BEGIN_SRC python
+	trk_idxs = [10, 2, 4, 10, 3, 2, 4]
+   #+end_src
+
+   We have a *problem* here. We have repeated indices. Which implies we can't
+   differentiate which index belongs to which entity. Since the index 10 can
+   belong to /fluid/ or /boundary/.  Same for the rest of the indices.
+
+   Worse could be, a particle is actually in contact with fluid with index 2,
+   but we can assume that it actually belongs to boundary and use boundary
+   particle properties for any further computation.
+
+   To overcome the problem we need to know which index belongs to which particle
+   array (entity).
+
+   *To be continued...*
+
+   This problem is solved by using entity id's (Elaborated explanation will be
+   given later)
+
+
+
+* Are the tracking indices at a given time are correct?
+
+** Simulation at time t0
+  We are interested in the dynamcis of a system of 5 particles which belong to
+  the same particle array. At time ($t_0$) the particles look like in figure
+  \ref{fig:pars_t0_sim}.
+
+  \begin{figure}[H]
+  \centering
+  \includegraphics[scale=0.2]{dem_pysph_implementation_figures/pars_t0.eps}
+  \caption{Five particles in a simulation\label{fig:pars_t0_sim}}
+  \end{figure}
+
+  Let us focus on the tracking indices of particle 1. Particle with index 1 is
+  in contact with particles 4 and 5. So the 'trk_idx' with a limit of 6 would
+  look like
+
+  #+BEGIN_SRC python
+       trk_idxs = [3, 4, -1, -1, -1, -1]
+  #+end_src
+
+  Now using such information at time ($t_0$) i.e., particles in contact at time t0, we
+  can compute the forces and other properties of all the particles.
+
+  After computation of the force, in the integrator we will move the particles
+  to next time step. In PySPH that would look like \ref{fig:pars_t0_dt_sim}.
+  #+BEGIN_SRC python
+	def stage1(self, d_idx, d_x, d_y, d_z, d_u, d_v, d_w, dt):
+	d_x[d_idx] = d_x[d_idx] + dt * d_u[d_idx]
+	d_y[d_idx] = d_y[d_idx] + dt * d_v[d_idx]
+	d_z[d_idx] = d_z[d_idx] + dt * d_w[d_idx]
+  #+end_src
+
+  Similarly the particles being tracked by particle 1 will also move to the next
+  time step. Let us say that the particles at time ($t_0+dt$) looks like in figure
+
+
+  \begin{figure}[H]
+  \centering
+  \includegraphics[scale=0.2]{dem_pysph_implementation_figures/pars_t0_dt.eps}
+  \caption{Five particles in a simulation\label{fig:pars_t0_dt_sim}}
+  \end{figure}
+
+** Simulation at time t0 + dt
+   Now we are at time $t_0 + dt$. The particles position, velocity other physical
+   properties are at time $t+t_0$. But *trk_idxs* looks like
+
+  #+BEGIN_SRC python
+       trk_idxs = [3, 4, -1, -1, -1, -1]
+  #+end_src
+
+  But it actually should be
+
+  #+BEGIN_SRC python
+       trk_idxs = [2, 5, -1, -1, -1, -1]
+  #+end_src
+
+
+* How can it be solved?
+  One way we could solve it is by executing a equation on the enity with its
+  sources after completing the time step and update the tracking indices count
+  with adding new particles. Which would not need any nnps.
+
+  - Either in stage 2 for RK2
+  - Or simply a way with which we can execute an equation after completion of a
+    time step.
+
+
+
+* Why is it important?
+  Well we can say that I will adjust the count in the next time step while
+  computing the force. But that is actually creating a problem with RK2
+  integrator throught $tang_{x0}$. Since some particles will sure not be in
+  contact, but $tang_{x0}$ will keep them as they are been tracked at the
+  initiation of the time step.
+
+
+* Tests
+** DONE Case 1: No particles are overlapping [0/3]
+   CLOSED: [2018-11-14 Wed 19:20]
+   In this test case no particles are in contact. After executing the requisite
+   equations check for the contact indices of each particle. It has to be zero or
+   empty as expected.
+
+   - [ ] Create particles
+   - [ ] Execute equations
+   - [ ] Check for contacts
+** TODO Case 2: Add contacts [0/3]
+   Create particles such that few of them are in contact. After executing the
+   equations the contacts will be updated. This will test the
+   =LinearSpringForce= equation.
+
+   - [ ] Create particles
+   - [ ] Execute equations
+   - [ ] Check for contacts
+
+** TODO Case 3: Remove contacts [0/3]
+   Create particles such that only few are in contact. But the tracking indices
+   has to be more than the particles in contact. After executing the equations,
+   it has to remove the useless contact indices.
+
+   - [ ] Create particles
+   - [ ] Execute equations
+   - [ ] Check for contacts
+
+
+
+bibliographystyle:unsrt
+#+BEGIN_EXPORT latex
+\end{document}
+#+END_EXPORT

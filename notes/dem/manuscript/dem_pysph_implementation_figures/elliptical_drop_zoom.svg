@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 744.09448819 1052.3622047"
+   id="svg4466"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="elliptical_drop_zoom.svg">
+  <defs
+     id="defs4468">
+    <marker
+       inkscape:stockid="Arrow1Lstart"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Lstart"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path4186"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(12.5,0)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.7472017"
+     inkscape:cx="459.63704"
+     inkscape:cy="446.38729"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1023"
+     inkscape:window-x="0"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata4471">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <circle
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#530000;stroke-width:5;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path5014"
+       cx="403.55594"
+       cy="614.46106"
+       r="136.87567" />
+    <circle
+       id="path5030"
+       style="fill:#000000;stroke:none"
+       cx="401.78821"
+       cy="615.10217"
+       r="3" />
+    <path
+       style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow1Lstart)"
+       d="M 406.32699,614.06327 610.2999,550.9288"
+       id="path5032"
+       inkscape:connector-curvature="0" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:12.5px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="611.26312"
+       y="547.55499"
+       id="text5060"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan5062"
+         x="611.26312"
+         y="547.55499">idx=4</tspan></text>
+    <circle
+       id="path5064"
+       style="fill:#000000;stroke:none"
+       cx="332.53171"
+       cy="576.74451"
+       r="3" />
+    <circle
+       id="path5070"
+       style="fill:#000000;stroke:none"
+       cx="390.33844"
+       cy="489.74829"
+       r="3" />
+    <circle
+       id="path5072"
+       style="fill:#000000;stroke:none"
+       cx="384.04269"
+       cy="671.7536"
+       r="3" />
+    <circle
+       id="path5074"
+       style="fill:#000000;stroke:none"
+       cx="325.09125"
+       cy="642.56409"
+       r="3" />
+    <circle
+       id="path5076"
+       style="fill:#000000;stroke:none"
+       cx="477.33472"
+       cy="688.92389"
+       r="3" />
+    <circle
+       id="path5078"
+       style="fill:#000000;stroke:none"
+       cx="434.98126"
+       cy="621.95972"
+       r="3" />
+  </g>
+</svg>
