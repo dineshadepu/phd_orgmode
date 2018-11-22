@@ -1,0 +1,183 @@
+#+STARTUP: content
+#+LaTeX_CLASS: article
+#+OPTIONS: author:nil title:nil toc:nil
+#+OPTIONS: ^:nil
+
+#+LaTeX_HEADER: \usepackage{booktabs}
+#+LaTeX_HEADER: \usepackage{amsmath}
+
+# % to include pdf/eps/png files
+#+LaTeX_HEADER: \usepackage{graphicx}
+
+
+
+#+BEGIN_EXPORT latex
+\title{\sffamily \textbf{Rigid body dynamics}}
+
+\author{Dinesh A, IIT Bombay}
+
+\maketitle
+
+\begin{abstract}
+In this paper we will deal with dynamics of rigid bodies in 2 and 3 dimensions.
+A detailed outline of the theory with source code and practical examples will be
+given.
+\end{abstract}
+#+END_EXPORT
+
+* Rigid body dynamics in 2d
+
+  Moment of inertia with respect to origin in 2 dimensions is given by
+
+  \begin{eqnarray}
+    \label{eq:1}
+    I_{0} = \sum_{i=1}^p m_i (x_i^2 + y_i^2)
+  \end{eqnarray}
+
+  Moment of inertia with respect to center of mass in 2 dimensions is given by
+
+  \begin{eqnarray}
+    \label{eq:1}
+    I = \sum_{i=1}^p m_i ((x_i - x_{cm})^2 + (y_i - y_{cm})^2)
+  \end{eqnarray}
+
+  In three dimensions MOI has 6 components. MOI with respect to origin is given
+  by
+
+  \begin{eqnarray}
+    \label{eq:2}
+    I_{xx} &=& \sum_{i=1}^p m_i (y_i^2 + z_i^2)\\
+    I_{yy} &=& \sum_{i=1}^p m_i (x_i^2 + z_i^2)\\
+    I_{zz} &=& \sum_{i=1}^p m_i (x_i^2 + y_i^2)\\
+    I_{xy} &=& \sum_{i=1}^p m_i x_i y_i\\
+    I_{yz} &=& \sum_{i=1}^p m_i y_i z_i\\
+    I_{xz} &=& \sum_{i=1}^p m_i x_i z_i
+  \end{eqnarray}
+
+  All these inertial terms can be put in a matrix and is called
+  =inertial tensor= or =mass matrix=.
+
+  \begin{equation}
+    J =
+    \begin{pmatrix}
+      I_{xx} & I_{xy} & I_{xz}\\
+      I_{yx} & I_{yy} & I_{yz}\\
+      I_{zx} & I_{zy} & I_{zz}
+    \end{pmatrix}
+  \end{equation}
+
+
+  The angular momentum ($L$) is given by
+
+  # <<eq:4>>
+  \begin{equation}
+  \label{eq:4}%
+  \vec{L} = \vec{r} \times m \vec{v} = m \vec{r} \times (\vec {w} \times \vec {r}) = m \left(|\vec {r}|^{2} I - \vec {r} \vec{r}^{\mathrm{T}} \right) \vec {w} = J \vec{w}
+  \end{equation}
+
+  Similarly the torque is given by
+
+
+  \begin{eqnarray}
+  \label{eq:3}
+  \vec{\tau} = J \alpha
+  \end{eqnarray}
+
+
+
+* Introduction
+  In this file we learn how to use org mode to write a paper or thesis and use
+  the power to cite refer label and et cetera.
+
+  This chapter has three section.
+
+  - First section deals about citations ref:sec:citations.
+  - Second section deals all about figures ref:sec:figures.
+  - Final section deals with equations ref:sec:equations.
+
+** Citations
+   label:sec:citations
+   To cite a paper, place the following two lines at the bottom of the file
+
+   Cite the paper by following syntax
+
+   cite:kiara-2013-sph-incom-part-II
+
+   Or one can specify other types of citing style by.
+
+   Make sure that the style we are using is available in the current
+   directory. Like in here I am using phd class, so it requires iitbauthyr
+   citation style. So we need to have that file in the same level, then use it
+   as requisite bib style.
+
+   #+BEGIN_EXAMPLE
+   bibliographystyle:iitbauthyr
+   bibliography:~/Dropbox/Research/references.bib
+   #+END_EXAMPLE
+
+   Make sure $iitbauthyr.bst$ is in the current directory.
+
+** Figures
+   label:sec:figures
+   Create a figure using org mode syntax
+
+   #+BEGIN_EXAMPLE
+   #+name: figure_org_style
+   #+attr_latex: :placement [H]
+   #+caption: Figure using org mode style
+   [[file:img/figure_1.png]]
+   #+END_EXAMPLE
+
+
+   #+name: figure_org_style
+   #+attr_latex: :placement [H]
+   #+caption: Figure using org mode style
+   [[file:img/figure_1.png]]
+
+   Check if the latex attribute worked properly. Refer the figure
+   ref:figure_org_style.
+
+
+   #+BEGIN_EXAMPLE
+   \begin{figure}[H]
+   \centering
+   \includegraphics[scale=0.2]{img/figure_1.png}
+   \caption{\label{fig:latex_style_figure} }
+   \end{figure}
+   #+END_EXAMPLE
+
+   #+BEGIN_EXPORT latex
+   \begin{figure}[H]
+   \centering
+   \includegraphics[scale=0.2]{img/figure_1.png}
+   \caption{\label{fig:latex_style_figure} }
+   \end{figure}
+   #+END_EXPORT
+
+   Check the figure placement. Refer the figure
+   ref:fig:latex_style_figure.
+
+
+** Equations
+   label:sec:equations
+   Equations can be written using latex environment as
+
+   #+BEGIN_EXAMPLE
+   \begin{equation}
+   \label{eq:einstien}
+   E = mc^2
+   \end{equation}
+   #+END_EXAMPLE
+
+
+   \begin{equation}
+     \label{eq:einstien}
+     E = mc^2
+   \end{equation}
+
+
+   bibliographystyle:acm
+   bibliography:~/Dropbox/Research/references.bib
+   #+BEGIN_EXPORT latex
+   \end{document}
+   #+END_EXPORT

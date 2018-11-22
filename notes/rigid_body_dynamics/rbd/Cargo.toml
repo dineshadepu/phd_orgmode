@@ -1,0 +1,11 @@
+[package]
+name = "rbd"
+version = "0.1.0"
+authors = ["dineshadepu <adepu.dinesh.a@gmail.com>"]
+
+[dependencies]
+ndarray = "0.12"
+itertools-num = "0.1"
+
+[profile.release]
+opt-level = 3
